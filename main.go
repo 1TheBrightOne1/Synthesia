@@ -34,19 +34,23 @@ func main() {
 
 	defer video.Close()
 
+	/*m := make(map[string]bool)
+
 	for x := 0; x < img.Cols(); x++ {
 		for y := 0; y < img.Rows(); y++ {
-			val0 := img.GetUCharAt3(x, y, 0)
-			val1 := img.GetUCharAt3(x, y, 1)
-			val2 := img.GetUCharAt3(x, y, 2)
+			val := img.GetVecbAt(x, y)
 
-			if val0 != val1 || val0 != val2 {
-				fmt.Printf("x: %d, y: %d, b: %d, g: %d, r: %d\n", x, y, val0, val1, val2)
+			if val[0] != val[1] || val[0] != val[2] {
+				m[fmt.Sprintf("b: %d, g: %d, r: %d\n", val[0], val[1], val[2])] = true
 			}
 		}
 	}
 
-	return
+	for key, _ := range m {
+		fmt.Println(key)
+	}
+
+	return*/
 
 	/*for key := 0; key < img.Rows(); key++ {
 		fmt.Printf("%d\t%d\n", key, t[key])
@@ -75,39 +79,62 @@ func main() {
 		fmt.Println(img.GetUCharAt3(int(xI), int(yI), 1))
 		fmt.Println(img.GetUCharAt3(int(xI), int(yI), 2))
 	}
-	return
-	for i := 0; i < int(whiteKeyCount); i++ {
+	return*/
+	for i := 24; i < int(whiteKeyCount); i++ {
+		fmt.Printf("Key %d\n", i)
 		video, _ := gocv.VideoCaptureFile("/out.mp4")
-		result := monitorKey(video, int64(i), skip, row)
+		frames := monitorKey(video, int64(i), skip, row)
+		fmt.Println(frames)
 		video.Close()
+	}
 
-		fmt.Printf("Key: %d V: %d\n", i, result)
-	}*/
-	monitorKey(video, key, skip, row)
+	//monitorKey(video, key, skip, row)
 }
 
-func monitorKey(video *gocv.VideoCapture, keyIndex, skipFrames, row int64) {
+func monitorKey(video *gocv.VideoCapture, keyIndex, skipFrames, row int64) int {
+	var total int
+
 	video.Grab(int(skipFrames))
 
 	img := gocv.NewMat()
+	defer img.Close()
 
-	var counter int64
+	once := false
 	for video.Read(&img) {
-		whiteKeyWidth := int64(img.Cols() / int(whiteKeyCount))
+		data := img.ToBytes()
+		cols := img.Cols()
 		ch := img.Channels()
 
-		var sum, count int
-		avg := make([]int, ch)
-		for i := int64(0); i < whiteKeyWidth; i++ {
-			for z := 0; z < ch; z++ {
-				val := img.GetUCharAt3(int(whiteKeyWidth*keyIndex+i), int(row), z)
-				sum += int(val)
-				avg[z] += int(val)
-			}
-			count++ //This is stupid, use keywidth
+		whiteKeyWidth := float64(cols) / float64(whiteKeyCount)
+		if !once {
+			once = true
+			fmt.Printf("%d - %d\n", int(whiteKeyWidth*float64(keyIndex)), int(whiteKeyWidth*float64(keyIndex+1)))
 		}
 
-		fmt.Printf("frame: %d v: %v 0: %d 1: %d 2: %d\n", counter+skipFrames, int(float64(sum)/float64(count*ch)), avg[0]/(count*ch), avg[1]/(count*ch), avg[2]/(count*ch))
-		counter++
+		show := false
+		for x := int(whiteKeyWidth * float64(keyIndex)); x < int(whiteKeyWidth*float64(keyIndex+1)); x++ {
+			pixel := readPixel(data, cols, ch, x, int(row))
+
+			if pixel[0] > 100 && pixel[2] > 100 {
+				show = true
+			}
+		}
+
+		if show {
+			total++
+		}
 	}
+
+	return total
+}
+
+func readPixel(data []byte, cols, ch, x, y int) []uint8 {
+	idx := x*cols*ch + y*ch
+
+	result := make([]uint8, ch)
+	for i := 0; i < ch; i++ {
+		result[i] = data[idx+i]
+	}
+
+	return result
 }
