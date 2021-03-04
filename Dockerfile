@@ -4,8 +4,6 @@ WORKDIR /go/src/app
 
 ENV GO111MODULE=on
 
-ENV keyindex=0
-
 ENV skipframes=240
 
 ENV row=50
