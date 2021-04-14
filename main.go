@@ -1,6 +1,24 @@
 package main
 
 import (
+	"os"
+
+	"github.com/1TheBrightOne1/Synthesia/musicxml"
+)
+
+func main() {
+	b := musicxml.NewBuilder(15, 3, 4, 4)
+
+	b.BuildXML(os.Stdout)
+}
+
+/*func main() {
+	keys := []int{0, 12, 23, 34, 46, 58, 69, 81, 93, 105, 116, 129, 141, 153, 165, 178, 190, 201, 215, 227, 240, 252, 265, 278, 290, 303, 315, 328, 341, 353, 366, 379, 392, 404, 417, 430, 442, 455, 467, 480, 493, 505, 517, 530, 542, 555, 567, 579, 591, 603, 616, 628, 640}
+	frame := gocv.IMRead("./server/static/frames/wat.png", gocv.IMReadUnchanged)
+	keyboard.NewKeyboard(&frame, "A", keys, 197, 50)
+}*/
+
+/*import (
 	"bufio"
 	"fmt"
 	"os"
@@ -98,3 +116,26 @@ func loadKeys() []*key {
 
 	return keys[0 : len(keys)-1]
 }
+
+func writeKeysToXML(keys []key) {
+	beatsPerMeasure := 4
+	framesPerMeasure := 35
+
+	heldFor := 0
+	for frame, val := range keys[25].frames {
+		if val && !keys[25].frames[frame-1] {
+			//Key has been pressed
+			heldFor++
+		} else if !val && keys[25].frames[frame-1] {
+			//Key has been released
+			note := fmt.Sprintf("<note><pitch><step>E</step><octave>4</octave></pitch><duration>%d</duration><type>%s</type></note>",
+				heldFor/framesPerMeasure*beatsPerMeasure,
+				"Eighth")
+
+			heldFor = 0
+		} else if val {
+			heldFor++
+		}
+	}
+}
+*/
