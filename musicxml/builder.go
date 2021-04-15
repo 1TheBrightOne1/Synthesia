@@ -1,13 +1,13 @@
 package musicxml
 
 import (
-	"io"
-	"math"
 	"encoding/xml"
-	"strconv"
 	"fmt"
-	"os"
+	"io"
 	"io/ioutil"
+	"math"
+	"os"
+	"strconv"
 )
 
 var PitchIndices = map[int]string{
@@ -22,10 +22,10 @@ var PitchIndices = map[int]string{
 
 type Builder struct {
 	framesPerQuarter int
-	divisions int
-	measures []Measure
-	beats int
-	beatType int
+	divisions        int
+	measures         []Measure
+	beats            int
+	beatType         int
 
 	keyNotes []keyNotes
 }
@@ -38,10 +38,10 @@ type keyNotes struct {
 func NewBuilder(framesPerQuarter, divisions, beats, beatType int) *Builder {
 	return &Builder{
 		framesPerQuarter: framesPerQuarter,
-		divisions: divisions,
-		measures: make([]Measure, 1),
-		beats: beats,
-		beatType: beatType,
+		divisions:        divisions,
+		measures:         make([]Measure, 1),
+		beats:            beats,
+		beatType:         beatType,
 	}
 }
 
@@ -57,7 +57,7 @@ func (b *Builder) BuildXML(w io.Writer) {
 
 	for i, _ := range c {
 		c[i] = make(chan bool)
-		go b.processNote(i, PitchIndices[i % len(PitchIndices)], &b.keyNotes[i], c[i])
+		go b.processNote(i, PitchIndices[i%len(PitchIndices)], &b.keyNotes[i], c[i])
 	}
 
 	for _, channel := range c {
@@ -69,7 +69,7 @@ func (b *Builder) BuildXML(w io.Writer) {
 	for {
 		min := maxVal
 		var values []int
-		for i, n := range b.keyNotes{
+		for i, n := range b.keyNotes {
 			if n.index >= len(n.notes) {
 				continue
 			}
@@ -123,7 +123,7 @@ func (b *Builder) addToMeasure(noteIndices []int) {
 
 	noteStart := b.keyNotes[noteIndices[0]].notes[b.keyNotes[noteIndices[0]].index].StartsAtDivision
 	measureIndex := noteStart / (b.beats * b.divisions)
-	relativeNoteStart := noteStart - measureIndex * b.beats * b.divisions
+	relativeNoteStart := noteStart - measureIndex*b.beats*b.divisions
 
 	//TODO: Remove debug code here
 	if noteStart == 41 {
@@ -131,14 +131,14 @@ func (b *Builder) addToMeasure(noteIndices []int) {
 	}
 
 	if measureIndex >= len(b.measures) {
-		newMeasures := make([]Measure, measureIndex + 1)
+		newMeasures := make([]Measure, measureIndex+1)
 		copy(newMeasures, b.measures)
 		b.measures = newMeasures
 	}
 
 	//Forward to the next starting note
 	if b.measures[measureIndex].Counter < relativeNoteStart {
-		b.measures[measureIndex].Notes = append(b.measures[measureIndex].Notes, NewForward(relativeNoteStart - b.measures[measureIndex].Counter))
+		b.measures[measureIndex].Notes = append(b.measures[measureIndex].Notes, NewForward(relativeNoteStart-b.measures[measureIndex].Counter))
 		b.measures[measureIndex].Counter = relativeNoteStart
 	}
 
@@ -159,14 +159,14 @@ func (b *Builder) addToMeasure(noteIndices []int) {
 			}
 			b.measures[measureIndex].Notes = append(b.measures[measureIndex].Notes, NewBackup(backupDuration))
 			isChord = false
-			voice[currentNote.Staff - 1]++
+			voice[currentNote.Staff-1]++
 		}
 
-		currentNote.Voice = voice[currentNote.Staff - 1] + 1
+		currentNote.Voice = voice[currentNote.Staff-1] + 1
 
 		//Check if note extends into next measure
-		if noteStart + currentNote.Duration > (measureIndex + 1) * b.beats * b.divisions {
-			newDuration := (measureIndex + 1) * b.beats * b.divisions - noteStart
+		if noteStart+currentNote.Duration > (measureIndex+1)*b.beats*b.divisions {
+			newDuration := (measureIndex+1)*b.beats*b.divisions - noteStart
 			remainingDuration := currentNote.Duration - newDuration
 			newNote := currentNote
 
@@ -184,9 +184,9 @@ func (b *Builder) addToMeasure(noteIndices []int) {
 				b.keyNotes[currentIndex].notes = append(b.keyNotes[currentIndex].notes, newNote)
 			} else {
 				newNotes := make([]Note, 0)
-				newNotes = append(newNotes, b.keyNotes[currentIndex].notes[:b.keyNotes[currentIndex].index + 1]...)
+				newNotes = append(newNotes, b.keyNotes[currentIndex].notes[:b.keyNotes[currentIndex].index+1]...)
 				newNotes = append(newNotes, newNote)
-				newNotes = append(newNotes, b.keyNotes[currentIndex].notes[b.keyNotes[currentIndex].index + 1:]...)
+				newNotes = append(newNotes, b.keyNotes[currentIndex].notes[b.keyNotes[currentIndex].index+1:]...)
 				b.keyNotes[currentIndex].notes = newNotes
 			}
 		}
@@ -196,7 +196,7 @@ func (b *Builder) addToMeasure(noteIndices []int) {
 		} else {
 			b.measures[measureIndex].Notes = append(b.measures[measureIndex].Notes, currentNote)
 		}
-		b.measures[measureIndex].Counter = (currentNote.StartsAtDivision - measureIndex * b.beats * b.divisions) + currentNote.Duration
+		b.measures[measureIndex].Counter = (currentNote.StartsAtDivision - measureIndex*b.beats*b.divisions) + currentNote.Duration
 
 		isChord = true
 		previousNote = &currentNote
@@ -208,7 +208,7 @@ func (b *Builder) addToMeasure(noteIndices []int) {
 func (b *Builder) writeMeasureToXML(w io.Writer, i int) error {
 	measure := b.measures[i]
 	measure.Number = strconv.Itoa(i)
-	measure.XMLName = xml.Name{ Local: "measure" }
+	measure.XMLName = xml.Name{Local: "measure"}
 
 	expectedLength := b.divisions * b.beats
 	actualLength := 0
@@ -227,7 +227,7 @@ func (b *Builder) writeMeasureToXML(w io.Writer, i int) error {
 		remainder := expectedLength - actualLength
 		measure.Notes = append(measure.Notes, NewForward(remainder))
 	}
-	
+
 	bytes, err := xml.Marshal(measure)
 	if err != nil {
 		fmt.Println(i)
@@ -248,7 +248,7 @@ func (b *Builder) processNote(index int, note string, keyNote *keyNotes, c chan 
 	k := LoadFromFile("out1.txt", index, note)
 
 	octave := int((index + 5) / 7) //TODO: dynamically pick the octave offset
-	
+
 	staff := 1
 	if octave < 4 {
 		staff = 2
@@ -259,8 +259,8 @@ func (b *Builder) processNote(index int, note string, keyNote *keyNotes, c chan 
 		if frame && (i == 0 || !k.frames[i-1]) {
 			for j := i + 1; i < len(k.frames); j++ {
 				if !k.frames[j] {
-					snappedI := int(math.Round(float64(i) / float64(framesPerDivision))) * framesPerDivision
-					snappedJ := int(math.Round(float64(j) / float64(framesPerDivision))) * framesPerDivision
+					snappedI := int(math.Round(float64(i)/float64(framesPerDivision))) * framesPerDivision
+					snappedJ := int(math.Round(float64(j)/float64(framesPerDivision))) * framesPerDivision
 					duration := (snappedJ - snappedI) / framesPerDivision
 					if duration == 0 {
 						duration = 1
@@ -272,9 +272,9 @@ func (b *Builder) processNote(index int, note string, keyNote *keyNotes, c chan 
 							Step:   note,
 							Octave: octave,
 						},
-						Duration: duration,
-						NoteType: durationToNoteType[duration],
-						Staff:    staff,
+						Duration:         duration,
+						NoteType:         durationToNoteType[duration],
+						Staff:            staff,
 						StartsAtDivision: snappedI / framesPerDivision,
 					}
 

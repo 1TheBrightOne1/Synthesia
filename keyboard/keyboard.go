@@ -39,9 +39,9 @@ func NewKeyboard(frame *gocv.Mat, startingKey string, whiteKeyBorders []int, key
 }
 
 func (k *Keyboard) WriteFrames(w io.Writer, includeBlackKeys bool) {
-	for i := 0; i < len(k.whiteKeys[0].frames); i++ {
+	for i := 0; i < len(k.whiteKeys[0].pixels); i++ {
 		for j := 0; j < len(k.whiteKeys); j++ {
-			if k.whiteKeys[j].frames[i] {
+			if k.whiteKeys[j].pixels[i] {
 				fmt.Fprint(w, "1 ")
 			} else {
 				fmt.Fprint(w, "0 ")
@@ -70,9 +70,9 @@ func (k *Keyboard) CheckFrame(frame *gocv.Mat) {
 func (k *Keyboard) CalibrateFrame(frame *gocv.Mat, row, keyIndex int) (key, offset int) {
 	if keyIndex >= 0 {
 		if k.whiteKeys[keyIndex].checkRow(frame, row) {
-			for j := row + 1; j >= row - 40 /*TODO: 40 could be too far out of bounds. Also DRY*/; j-- {
-				if !key.checkRow(frame, i) {
-					return i, j
+			for j := row + 1; j >= row-40; /*TODO: 40 could be too far out of bounds. Also DRY*/ j-- {
+				if !k.whiteKeys[keyIndex].checkRow(frame, j) {
+					return keyIndex, j
 				}
 			}
 		}
@@ -80,7 +80,7 @@ func (k *Keyboard) CalibrateFrame(frame *gocv.Mat, row, keyIndex int) (key, offs
 	}
 	for i, key := range k.whiteKeys {
 		if key.checkRow(frame, row) {
-			for j := row + 1; j >= row - 40 /*TODO: 40 could be too far out of bounds*/; j-- {
+			for j := row + 1; j >= row-40; /*TODO: 40 could be too far out of bounds*/ j-- {
 				if !key.checkRow(frame, i) {
 					return i, j
 				}
@@ -102,7 +102,7 @@ func (k *Keyboard) initWhiteKeys(borders []int) {
 		}
 	}
 	for i := range k.whiteKeys {
-		k.whiteKeys[i] = newKey(borders[i], borders[i+1], octave[pitchIndex%len(octave)])
+		k.whiteKeys[i] = newKey(borders[i], borders[i+1], 0, octave[pitchIndex%len(octave)])
 		pitchIndex++
 	}
 }
@@ -121,7 +121,7 @@ func (k *Keyboard) initBlackKeys(frame *gocv.Mat) {
 			if finish-start > 4 { //TODO: Make configurable
 				for _, whiteKey := range k.whiteKeys {
 					if start > whiteKey.start && start < whiteKey.finish {
-						k.blackKeys = append(k.blackKeys, newKey(start, finish, whiteKey.pitch+"#"))
+						k.blackKeys = append(k.blackKeys, newKey(start, finish, 0, whiteKey.pitch+"#"))
 						break
 					}
 				}
