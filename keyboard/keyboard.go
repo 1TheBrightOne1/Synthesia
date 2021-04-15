@@ -53,11 +53,41 @@ func (k *Keyboard) WriteFrames(w io.Writer, includeBlackKeys bool) {
 
 func (k *Keyboard) CheckFrame(frame *gocv.Mat) {
 	for _, key := range k.whiteKeys {
-		key.readFrame(frame, k.testRow)
+		go key.readFrame(frame, k.testRow)
 	}
 	for _, key := range k.blackKeys {
-		key.readFrame(frame, k.testRow)
+		go key.readFrame(frame, k.testRow)
 	}
+
+	for _, key := range k.whiteKeys {
+		<-key.done
+	}
+	for _, key := range k.blackKeys {
+		<-key.done
+	}
+}
+
+func (k *Keyboard) CalibrateFrame(frame *gocv.Mat, row, keyIndex int) (key, offset int) {
+	if keyIndex >= 0 {
+		if k.whiteKeys[keyIndex].checkRow(frame, row) {
+			for j := row + 1; j >= row - 40 /*TODO: 40 could be too far out of bounds. Also DRY*/; j-- {
+				if !key.checkRow(frame, i) {
+					return i, j
+				}
+			}
+		}
+		return -1, -1
+	}
+	for i, key := range k.whiteKeys {
+		if key.checkRow(frame, row) {
+			for j := row + 1; j >= row - 40 /*TODO: 40 could be too far out of bounds*/; j-- {
+				if !key.checkRow(frame, i) {
+					return i, j
+				}
+			}
+		}
+	}
+	return -1, -1
 }
 
 func (k *Keyboard) initWhiteKeys(borders []int) {
