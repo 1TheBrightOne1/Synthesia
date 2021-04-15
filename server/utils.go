@@ -5,7 +5,7 @@ import (
 	"gocv.io/x/gocv"
 )
 
-func calibrate(v *gocv.VideoCapture, k keyboard.Keyboard, scanRow int) int {
+func calibrate(v *gocv.VideoCapture, k *keyboard.Keyboard, scanRow int) int {
 	requiredCalibrations := 10
 	matched := 0
 	sum := 0

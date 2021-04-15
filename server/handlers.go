@@ -132,7 +132,9 @@ func generate(w http.ResponseWriter, r *http.Request) {
 	testRow, _ := strconv.ParseInt(testRowStr[0], 10, 32)
 	k := keyboard.NewKeyboard(&img, startingKey[0], keyListInt, int(keyboardRow), int(testRow))
 
-	fmt.Println("Starting")
+	fmt.Println("Calibrating")
+	offset := calibrate(v, k, int(testRow))
+	w.Write([]byte(strconv.Itoa(offset)))
 
 	v.Close()
 	v, err = gocv.VideoCaptureFile("./sessions/" + video[0] + "/video.mp4")

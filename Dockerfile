@@ -14,8 +14,6 @@ RUN mkdir /outputs
 
 COPY . .
 
-COPY videoplayback.mp4 /out.mp4
-
 RUN go build -o /app .
 
 ENTRYPOINT ["/app"]

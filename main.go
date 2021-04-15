@@ -1,16 +1,16 @@
 package main
 
-import (
-	"os"
-
-	"github.com/1TheBrightOne1/Synthesia/musicxml"
-)
+import "github.com/1TheBrightOne1/Synthesia/server"
 
 func main() {
+	server.Start()
+}
+
+/*func main() {
 	b := musicxml.NewBuilder(20, 20, 4, 4)
 
 	b.BuildXML(os.Stdout)
-}
+}*/
 
 /*func main() {
 	keys := []int{0, 12, 23, 34, 46, 58, 69, 81, 93, 105, 116, 129, 141, 153, 165, 178, 190, 201, 215, 227, 240, 252, 265, 278, 290, 303, 315, 328, 341, 353, 366, 379, 392, 404, 417, 430, 442, 455, 467, 480, 493, 505, 517, 530, 542, 555, 567, 579, 591, 603, 616, 628, 640}
