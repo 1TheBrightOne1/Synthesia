@@ -1,0 +1,3 @@
+For first frame, are there any notes that are starting?
+If so, take all of those notes of the same duration and place them into a chord
+Take any other durations and create a backup element, followed by chords again for those

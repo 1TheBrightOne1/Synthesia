@@ -1,0 +1,35 @@
+<html>
+    <head>
+        <script src="/files/js/updateCanvas.js"></script>
+    </head>
+    <body>
+        <img id="frame" src="%s" style="display: none;"/>
+        <canvas id="canvas" width="%d" height="%d"></canvas>
+        <form action="/generate/">
+            <div>
+                <span>key count:</span>
+                <input id="keyCount" type="number" name="keyCount"/>
+            </div>
+            <div>
+                <span>starting key:</span>
+                <input id="startingKey" type="text" name="startingKey"/>
+            </div>
+            <div>
+                <span>test row:</span>
+                <input id="testRow" type="number" name="testRow"/>
+            </div>
+            <div>
+                <span>test row:</span>
+                <input id="keyboardRow" type="number" name="keyboardRow"/>
+            </div>
+            <div>
+                <span>keys:</span>
+                <textarea id="keys"></textarea>
+                <input type="text" id="keyBorders" name="keyBorders" style="display: none;"/>
+                <input type="text" id="video" name="video" style="display: none;" value="%s"/>
+            </div>
+            <input type="submit" value="submit"/>
+        </form>
+        <button onclick="updateCanvas()">update</button>
+    </body>
+</html>

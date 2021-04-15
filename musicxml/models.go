@@ -34,6 +34,30 @@ type Note struct {
 	Duration int      `xml:"duration,omitempty"`
 	NoteType NoteType `xml:"type,omitempty"`
 	Staff    int      `xml:"staff,omitempty"`
+	Tie string `xml:",innerxml"`
+	Tied string `xml:",innerxml"`
+	StartsAtDivision int `xml:"-"`
+}
+
+type ChordedNote struct {
+	Note
+	Chord string `xml:"allowempty>doesnotmatter,omitempty"`
+}
+
+func NewChordedNoteFromNote(note Note) ChordedNote {
+	return ChordedNote {
+		Note {
+			XMLName: note.XMLName,
+			Pitch: note.Pitch,
+			Duration: note.Duration,
+			NoteType: note.NoteType,
+			Staff: note.Staff,
+			StartsAtDivision: note.StartsAtDivision,
+			Tie: note.Tie,
+			Tied: note.Tied,
+		},
+		"",
+	}
 }
 
 type Backup struct {
