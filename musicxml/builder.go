@@ -6,6 +6,8 @@ import (
 	"encoding/xml"
 	"strconv"
 	"fmt"
+	"os"
+	"io/ioutil"
 )
 
 type Builder struct {
@@ -34,6 +36,11 @@ func NewBuilder(framesPerQuarter, divisions, beats, beatType int) *Builder {
 }
 
 func (b *Builder) BuildXML(w io.Writer) {
+	r, _ := os.Open("header.xml")
+	header, _ := ioutil.ReadAll(r)
+	w.Write(header)
+	r.Close()
+
 	b.keyNotes = make([]keyNotes, 52)
 
 	c := make([]chan bool, 2)
@@ -85,6 +92,11 @@ func (b *Builder) BuildXML(w io.Writer) {
 	for i, _ := range b.measures {
 		b.writeMeasureToXML(w, i)
 	}
+
+	r, _ = os.Open("footer.xml")
+	footer, _ := ioutil.ReadAll(r)
+	w.Write(footer)
+	r.Close()
 }
 
 //addToMeasure expects a slice of indices for notes that start at the same time with their durations sorted in decreasing order
