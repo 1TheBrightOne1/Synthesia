@@ -7,7 +7,7 @@ import (
 type key struct {
 	start  int
 	finish int
-	frames []bool
+	pixels []bool
 	pitch  string
 }
 
@@ -16,7 +16,7 @@ func newKey(start, finish int, pitch string) *key {
 		start:  start,
 		finish: finish,
 		pitch:  pitch,
-		frames: make([]bool, 0),
+		pixels: make([]bool, 0),
 	}
 }
 
@@ -30,8 +30,8 @@ func (k *key) readFrame(img *gocv.Mat, row int) {
 		}
 	}
 	if (k.finish-k.start)-passed < 3 {
-		k.frames = append(k.frames, true)
+		k.pixels = append(k.pixels, true)
 	} else {
-		k.frames = append(k.frames, false)
+		k.pixels = append(k.pixels, false)
 	}
 }

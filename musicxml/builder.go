@@ -10,6 +10,16 @@ import (
 	"io/ioutil"
 )
 
+var PitchIndices = map[int]string{
+	0: "A",
+	1: "B",
+	2: "C",
+	3: "D",
+	4: "E",
+	5: "F",
+	6: "G",
+}
+
 type Builder struct {
 	framesPerQuarter int
 	divisions int
@@ -43,15 +53,16 @@ func (b *Builder) BuildXML(w io.Writer) {
 
 	b.keyNotes = make([]keyNotes, 52)
 
-	c := make([]chan bool, 2)
-	c[0] = make(chan bool)
-	c[1] = make(chan bool)
+	c := make([]chan bool, 52)
 
-	go b.processNote(25, "E", &b.keyNotes[25], c[0])
-	go b.processNote(28, "A", &b.keyNotes[28], c[1])
+	for i, _ := range c {
+		c[i] = make(chan bool)
+		go b.processNote(i, PitchIndices[i % len(PitchIndices)], &b.keyNotes[i], c[i])
+	}
 
-	<- c[0]
-	<- c[1]
+	for _, channel := range c {
+		<-channel
+	}
 
 	const maxVal = 999999999
 	//Find next division that plays a note and all notes that play on that division
@@ -68,6 +79,7 @@ func (b *Builder) BuildXML(w io.Writer) {
 				min = n.notes[n.index].StartsAtDivision
 			} else if n.notes[n.index].StartsAtDivision == min {
 				//insert in order of duration
+				inserted := false
 				for j, index := range values {
 					if n.notes[n.index].Duration > b.keyNotes[index].notes[b.keyNotes[index].index].Duration {
 						valueCopy := make([]int, 0)
@@ -75,8 +87,12 @@ func (b *Builder) BuildXML(w io.Writer) {
 						valueCopy = append(valueCopy, i)
 						valueCopy = append(valueCopy, values[j:]...)
 						values = valueCopy
+						inserted = true
 						break
 					}
+				}
+				if !inserted {
+					values = append(values, i)
 				}
 			}
 		}
@@ -109,6 +125,11 @@ func (b *Builder) addToMeasure(noteIndices []int) {
 	measureIndex := noteStart / (b.beats * b.divisions)
 	relativeNoteStart := noteStart - measureIndex * b.beats * b.divisions
 
+	//TODO: Remove debug code here
+	if noteStart == 41 {
+		noteStart = 41
+	}
+
 	if measureIndex >= len(b.measures) {
 		newMeasures := make([]Measure, measureIndex + 1)
 		copy(newMeasures, b.measures)
@@ -117,34 +138,47 @@ func (b *Builder) addToMeasure(noteIndices []int) {
 
 	//Forward to the next starting note
 	if b.measures[measureIndex].Counter < relativeNoteStart {
-		b.measures[measureIndex].Notes = append(b.measures[measureIndex].Notes, NewForward(relativeNoteStart))
-		b.measures[measureIndex].Counter += relativeNoteStart - b.measures[measureIndex].Counter
+		b.measures[measureIndex].Notes = append(b.measures[measureIndex].Notes, NewForward(relativeNoteStart - b.measures[measureIndex].Counter))
+		b.measures[measureIndex].Counter = relativeNoteStart
 	}
 
 	isChord := false //Only the first note in each chord should be false
+	voice := [...]int{1, 1}
 	var previousNote *Note
 	for _, currentIndex := range noteIndices {
 		currentNote := b.keyNotes[currentIndex].notes[b.keyNotes[currentIndex].index]
 
 		//Backup to the previous starting position is multiple durations are detected
-		if previousNote != nil && previousNote.Duration != currentNote.Duration {
-			b.measures[measureIndex].Notes = append(b.measures[measureIndex].Notes, NewBackup(previousNote.Duration))
+		//Or if the measure counter has surpassed the next notes start
+		if previousNote != nil && previousNote.Duration != currentNote.Duration || relativeNoteStart < b.measures[measureIndex].Counter {
+			backupDuration := 0
+			if relativeNoteStart < b.measures[measureIndex].Counter {
+				backupDuration = b.measures[measureIndex].Counter - relativeNoteStart
+			} else {
+				backupDuration = previousNote.Duration
+			}
+			b.measures[measureIndex].Notes = append(b.measures[measureIndex].Notes, NewBackup(backupDuration))
 			isChord = false
+			voice[currentNote.Staff - 1]++
 		}
+
+		currentNote.Voice = voice[currentNote.Staff - 1] + 1
 
 		//Check if note extends into next measure
 		if noteStart + currentNote.Duration > (measureIndex + 1) * b.beats * b.divisions {
 			newDuration := (measureIndex + 1) * b.beats * b.divisions - noteStart
 			remainingDuration := currentNote.Duration - newDuration
-			currentNote.Duration = newDuration
-			currentNote.Tie = currentNote.Tie + "<tie>start</tie>"
-			currentNote.Tied = currentNote.Tied + "<tied>start</tied>"
-
 			newNote := currentNote
+
+			currentNote.Duration = newDuration
+			currentNote.Tie = currentNote.Tie + "<tie type=\"start\"/>"
+			currentNote.Notations = append(currentNote.Notations, Tied{T: "start"})
+
 			newNote.StartsAtDivision = (measureIndex + 1) * b.beats * b.divisions
 			newNote.Duration = remainingDuration
-			newNote.Tie = "<tie>stop</tie>"
-			newNote.Tied = "<tied>stop</tied>"
+			newNote.Tie = "<tie type=\"stop\"/>"
+			newNote.Notations = make([]Tied, 0)
+			newNote.Notations = append(newNote.Notations, Tied{T: "stop"})
 
 			if b.keyNotes[currentIndex].index >= len(b.keyNotes[currentIndex].notes) {
 				b.keyNotes[currentIndex].notes = append(b.keyNotes[currentIndex].notes, newNote)
@@ -173,7 +207,7 @@ func (b *Builder) addToMeasure(noteIndices []int) {
 
 func (b *Builder) writeMeasureToXML(w io.Writer, i int) error {
 	measure := b.measures[i]
-	measure.Number = strconv.Itoa(i + 1)
+	measure.Number = strconv.Itoa(i)
 	measure.XMLName = xml.Name{ Local: "measure" }
 
 	expectedLength := b.divisions * b.beats
@@ -206,9 +240,14 @@ func (b *Builder) writeMeasureToXML(w io.Writer, i int) error {
 
 //processNote goes through all frames and writes them to the measures
 func (b *Builder) processNote(index int, note string, keyNote *keyNotes, c chan bool) {
+	if index < 25 || index > 32 {
+		c <- true
+		return
+	}
+
 	k := LoadFromFile("out1.txt", index, note)
 
-	octave := int((index + 5) / 8)
+	octave := int((index + 5) / 7) //TODO: dynamically pick the octave offset
 	
 	staff := 1
 	if octave < 4 {
@@ -231,7 +270,7 @@ func (b *Builder) processNote(index int, note string, keyNote *keyNotes, c chan 
 						XMLName: xml.Name{Local: "note"},
 						Pitch: &Pitch{
 							Step:   note,
-							Octave: 4,
+							Octave: octave,
 						},
 						Duration: duration,
 						NoteType: durationToNoteType[duration],

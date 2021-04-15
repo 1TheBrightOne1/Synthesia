@@ -11,7 +11,7 @@ const (
 	half         NoteType = "half"
 	quarter      NoteType = "quarter"
 	eighth       NoteType = "eighth"
-	sixteenth    NoteType = "sixteenth"
+	sixteenth    NoteType = "16th"
 	thirtysecond NoteType = "32nd"
 )
 
@@ -28,35 +28,47 @@ type Pitch struct {
 	Octave int    `xml:"octave"`
 }
 
+type Tied struct {
+	T string `xml:"type,attr"`
+}
+
 type Note struct {
 	XMLName xml.Name
 	Pitch    *Pitch    `xml:"pitch,omitempty"`
 	Duration int      `xml:"duration,omitempty"`
+	Tie string `xml:",innerxml"`
+	Voice int `xml:"voice,omitempty"`
 	NoteType NoteType `xml:"type,omitempty"`
 	Staff    int      `xml:"staff,omitempty"`
-	Tie string `xml:",innerxml"`
-	Tied string `xml:",innerxml"`
+	Notations []Tied `xml:"notations>tied,omitempty"`
 	StartsAtDivision int `xml:"-"`
 }
 
 type ChordedNote struct {
-	Note
-	Chord string `xml:"allowempty>doesnotmatter,omitempty"`
+	XMLName xml.Name
+	Chord string `xml:"chord,allowempty"`
+	Pitch    *Pitch    `xml:"pitch,omitempty"`
+	Duration int      `xml:"duration,omitempty"`
+	Tie string `xml:",innerxml"`
+	Voice int `xml:"voice,omitempty"`
+	NoteType NoteType `xml:"type,omitempty"`
+	Staff    int      `xml:"staff,omitempty"`
+	Notations []Tied `xml:"notations>tied,omitempty"`
+	StartsAtDivision int `xml:"-"`
 }
 
 func NewChordedNoteFromNote(note Note) ChordedNote {
 	return ChordedNote {
-		Note {
-			XMLName: note.XMLName,
-			Pitch: note.Pitch,
-			Duration: note.Duration,
-			NoteType: note.NoteType,
-			Staff: note.Staff,
-			StartsAtDivision: note.StartsAtDivision,
-			Tie: note.Tie,
-			Tied: note.Tied,
-		},
-		"",
+		XMLName: xml.Name{Local:"note"},
+		Pitch: note.Pitch,
+		Duration: note.Duration,
+		NoteType: note.NoteType,
+		Staff: note.Staff,
+		StartsAtDivision: note.StartsAtDivision,
+		Tie: note.Tie,
+		Voice: note.Voice,
+		Notations: note.Notations,
+		Chord: "",
 	}
 }
 

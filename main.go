@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-	b := musicxml.NewBuilder(15, 3, 4, 4)
+	b := musicxml.NewBuilder(20, 20, 4, 4)
 
 	b.BuildXML(os.Stdout)
 }
