@@ -52,6 +52,20 @@ func (k *Keyboard) WriteFrames(w io.Writer, includeBlackKeys bool) {
 		}
 		fmt.Fprintf(w, "\n")
 	}
+
+	if includeBlackKeys {
+		fmt.Fprintf(w, "--------------------------------------")
+		for i := 0; i < len(k.blackKeys[0].pixels); i++ {
+			for j := 0; j < len(k.blackKeys); j++ {
+				if k.blackKeys[j].pixels[i] {
+					fmt.Fprint(w, "1 ")
+				} else {
+					fmt.Fprint(w, "0 ")
+				}
+			}
+			fmt.Fprintf(w, "\n")
+		}
+	}
 }
 
 func (k *Keyboard) CheckFrame(frame *gocv.Mat, testRow int) {

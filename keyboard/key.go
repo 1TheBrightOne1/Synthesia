@@ -42,7 +42,7 @@ func (k *key) checkRow(img *gocv.Mat, row int) bool {
 	for i := k.start; i < k.finish; i++ {
 		pixel := img.GetVecbAt(row, i)
 
-		if pixel[0] > 40 && pixel[2] > 40 && pixel[1] < 100 {
+		if pixel[2] > 60 && pixel[1] > 60 {
 			passed++
 		}
 	}
