@@ -141,7 +141,7 @@ func generate(w http.ResponseWriter, r *http.Request) {
 	testRowEnd, _ := strconv.ParseInt(testRowEndStr[0], 10, 32)
 	testAreaLength := int(testRowStart - testRowEnd)
 	
-	k := keyboard.NewKeyboard(&img, startingKey[0], keyListInt, []uint8{uint8(bThreshold), uint8(gThreshold), uint8(rThreshold)}, int(keyboardRow), int(testRowStart), int(testRowEnd))
+	k := keyboard.NewKeyboard(&img, startingKey[0], keyListInt, []int{int(bThreshold), int(gThreshold), int(rThreshold)}, int(keyboardRow), int(testRowStart), int(testRowEnd))
 
 	fmt.Println("Calibrating")
 	offset := calibrate(v, k, int(testRowStart))

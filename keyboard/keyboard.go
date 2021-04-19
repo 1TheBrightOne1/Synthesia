@@ -28,7 +28,7 @@ type Keyboard struct {
 	startingKey string
 }
 
-func NewKeyboard(frame *gocv.Mat, startingKey string, whiteKeyBorders []int, bgrThresholds []uint8, keyboardHeight, testRow, testRowEnd int) *Keyboard {
+func NewKeyboard(frame *gocv.Mat, startingKey string, whiteKeyBorders, bgrThresholds []int, keyboardHeight, testRow, testRowEnd int) *Keyboard {
 	k := &Keyboard{
 		testRow:        testRow,
 		testRowEnd:     testRowEnd,
@@ -107,7 +107,7 @@ func (k *Keyboard) CalibrateFrame(frame *gocv.Mat, row, keyIndex int) (key, offs
 	return -1, -1
 }
 
-func (k *Keyboard) initWhiteKeys(borders []int, bgrThresholds []uint8) {
+func (k *Keyboard) initWhiteKeys(borders, bgrThresholds []int) {
 	k.whiteKeys = make([]*key, len(borders)-1)
 
 	pitch := k.startingKey
@@ -124,7 +124,7 @@ func (k *Keyboard) initWhiteKeys(borders []int, bgrThresholds []uint8) {
 	}
 }
 
-func (k *Keyboard) initBlackKeys(frame *gocv.Mat, bgrThresholds []uint8) {
+func (k *Keyboard) initBlackKeys(frame *gocv.Mat, bgrThresholds []int) {
 	start := -1
 	finish := -1
 	for x := 0; x < frame.Cols()-1; x++ {
