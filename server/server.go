@@ -7,7 +7,7 @@ import (
 
 func Start() {
 	fs := http.FileServer(http.Dir("./server/static"))
-	sessions := http.FileServer(http.Dir("./sessions"))
+	sessions := http.FileServer(http.Dir("/outputs/sessions"))
 	http.HandleFunc("/download/", download)
 	http.HandleFunc("/setup/", setup)
 	http.Handle("/files/", http.StripPrefix("/files/", fs))

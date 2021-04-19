@@ -50,11 +50,19 @@ func download(w http.ResponseWriter, r *http.Request) {
 	}
 	dir := fmt.Sprintf("%x-%x-%x-%x-%x", b[0:4], b[4:6], b[6:8], b[8:10], b[10:])
 
-	os.Mkdir("./sessions/"+dir, 0666)
+	os.Mkdir("/outputs/sessions/"+dir, 0666)
 
-	video.DownloadYoutube(youtubeLink[0], "./sessions/"+string(dir)+"/video.mp4")
+	err = video.DownloadYoutube(youtubeLink[0], "/outputs/sessions/"+string(dir)+"/video.mp4")
+	if err != nil {
+		w.Write([]byte(err.Error()))
+		return
+	}
 
-	video.GenerateThumbnail("./sessions/"+string(dir)+"/video.mp4", 2400, "./sessions/"+string(dir)+"/frame.png")
+	err = video.GenerateThumbnail("/outputs/sessions/"+string(dir)+"/video.mp4", 2400, "/outputs/sessions/"+string(dir)+"/frame.png")
+	if err != nil {
+		w.Write([]byte(err.Error()))
+		return
+	}
 
 	http.Redirect(w, r, fmt.Sprintf("/setup/?video=%s", dir), http.StatusTemporaryRedirect)
 }
@@ -110,7 +118,7 @@ func generate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	v, err := gocv.VideoCaptureFile("./sessions/" + video[0] + "/video.mp4")
+	v, err := gocv.VideoCaptureFile("/outputs/sessions/" + video[0] + "/video.mp4")
 
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -151,7 +159,7 @@ func generate(w http.ResponseWriter, r *http.Request) {
 
 	v.Close()
 
-	v, err = gocv.VideoCaptureFile("./sessions/" + video[0] + "/video.mp4")
+	v, err = gocv.VideoCaptureFile("/outputs/sessions/" + video[0] + "/video.mp4")
 	defer v.Close()
 
 	count := 0

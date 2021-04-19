@@ -38,7 +38,10 @@ func DownloadYoutube(url, saveTo string) error {
 }
 
 func GenerateThumbnail(videoFilePath string, skipFrames int, frameFilePath string) error {
-	video, _ := gocv.VideoCaptureFile(videoFilePath)
+	video, err := gocv.VideoCaptureFile(videoFilePath)
+	if err != nil {
+		return err
+	}
 
 	defer video.Close()
 
