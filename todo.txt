@@ -1,0 +1,3 @@
+customize thresholds for triggering notes in webpage
+second clef
+notes that are odd durations, split to 2 notes that are tied

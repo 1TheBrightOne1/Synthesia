@@ -9,24 +9,25 @@ type key struct {
 	finish int
 	pixels []bool
 	pitch  string
-	windowThreshold int
 	done chan bool
+
+	bgrThresholds []uint8
 }
 
-func newKey(start, finish, windowThreshold int, pitch string) *key {
+func newKey(start, finish int, pitch string, bgrThresholds []uint8) *key {
 	return &key{
 		start:  start,
 		finish: finish,
 		pitch:  pitch,
 		pixels: make([]bool, 0),
 		done: make(chan bool),
-		windowThreshold: windowThreshold,
+		bgrThresholds: bgrThresholds,
 	}
 }
 
-func (k *key) readFrame(img *gocv.Mat, row int) {
+func (k *key) readFrame(img *gocv.Mat, row, testRowEnd int) {
 	//Read from row to top of window threshold and look for keys being played
-	for j := row; j <= k.windowThreshold; j-- {
+	for j := row; j > testRowEnd; j-- {
 		if k.checkRow(img, j) {
 			k.pixels = append(k.pixels, true)
 		} else {
@@ -41,7 +42,7 @@ func (k *key) checkRow(img *gocv.Mat, row int) bool {
 	for i := k.start; i < k.finish; i++ {
 		pixel := img.GetVecbAt(row, i)
 
-		if pixel[0] > 100 && pixel[2] > 100 && pixel[1] < 100 {
+		if pixel[0] > 40 && pixel[2] > 40 && pixel[1] < 100 {
 			passed++
 		}
 	}

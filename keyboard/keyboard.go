@@ -21,24 +21,27 @@ type Keyboard struct {
 	whiteKeys []*key
 	blackKeys []*key
 
-	testRow        int //The pixel row height where we check for whether a key is pressed
+	testRow        int //TODO: remove, no longer used
+	testRowEnd	   int
 	keyboardHeight int //The pixel row height used to identify the location of the black keys
 
 	startingKey string
 }
 
-func NewKeyboard(frame *gocv.Mat, startingKey string, whiteKeyBorders []int, keyboardHeight, testRow int) *Keyboard {
+func NewKeyboard(frame *gocv.Mat, startingKey string, whiteKeyBorders []int, bgrThresholds []uint8, keyboardHeight, testRow, testRowEnd int) *Keyboard {
 	k := &Keyboard{
 		testRow:        testRow,
+		testRowEnd:     testRowEnd,
 		keyboardHeight: keyboardHeight,
 		startingKey:    startingKey,
 	}
-	k.initWhiteKeys(whiteKeyBorders)
-	k.initBlackKeys(frame)
+	k.initWhiteKeys(whiteKeyBorders, bgrThresholds)
+	k.initBlackKeys(frame, bgrThresholds)
 	return k
 }
 
 func (k *Keyboard) WriteFrames(w io.Writer, includeBlackKeys bool) {
+	fmt.Println(len(k.whiteKeys[25].pixels))
 	for i := 0; i < len(k.whiteKeys[0].pixels); i++ {
 		for j := 0; j < len(k.whiteKeys); j++ {
 			if k.whiteKeys[j].pixels[i] {
@@ -51,12 +54,12 @@ func (k *Keyboard) WriteFrames(w io.Writer, includeBlackKeys bool) {
 	}
 }
 
-func (k *Keyboard) CheckFrame(frame *gocv.Mat) {
+func (k *Keyboard) CheckFrame(frame *gocv.Mat, testRow int) {
 	for _, key := range k.whiteKeys {
-		go key.readFrame(frame, k.testRow)
+		go key.readFrame(frame, testRow, k.testRowEnd)
 	}
 	for _, key := range k.blackKeys {
-		go key.readFrame(frame, k.testRow)
+		go key.readFrame(frame, testRow, k.testRowEnd)
 	}
 
 	for _, key := range k.whiteKeys {
@@ -70,7 +73,7 @@ func (k *Keyboard) CheckFrame(frame *gocv.Mat) {
 func (k *Keyboard) CalibrateFrame(frame *gocv.Mat, row, keyIndex int) (key, offset int) {
 	if keyIndex >= 0 {
 		if k.whiteKeys[keyIndex].checkRow(frame, row) {
-			for j := row + 1; j >= row-40; /*TODO: 40 could be too far out of bounds. Also DRY*/ j-- {
+			for j := row - 1; j >= row-40; /*TODO: 40 could be too far out of bounds. Also DRY*/ j-- {
 				if !k.whiteKeys[keyIndex].checkRow(frame, j) {
 					return keyIndex, j
 				}
@@ -80,8 +83,8 @@ func (k *Keyboard) CalibrateFrame(frame *gocv.Mat, row, keyIndex int) (key, offs
 	}
 	for i, key := range k.whiteKeys {
 		if key.checkRow(frame, row) {
-			for j := row + 1; j >= row-40; /*TODO: 40 could be too far out of bounds*/ j-- {
-				if !key.checkRow(frame, i) {
+			for j := row - 1; j >= row-40; /*TODO: 40 could be too far out of bounds*/ j-- {
+				if !key.checkRow(frame, j) {
 					return i, j
 				}
 			}
@@ -90,7 +93,7 @@ func (k *Keyboard) CalibrateFrame(frame *gocv.Mat, row, keyIndex int) (key, offs
 	return -1, -1
 }
 
-func (k *Keyboard) initWhiteKeys(borders []int) {
+func (k *Keyboard) initWhiteKeys(borders []int, bgrThresholds []uint8) {
 	k.whiteKeys = make([]*key, len(borders)-1)
 
 	pitch := k.startingKey
@@ -102,12 +105,12 @@ func (k *Keyboard) initWhiteKeys(borders []int) {
 		}
 	}
 	for i := range k.whiteKeys {
-		k.whiteKeys[i] = newKey(borders[i], borders[i+1], 0, octave[pitchIndex%len(octave)])
+		k.whiteKeys[i] = newKey(borders[i], borders[i+1], octave[pitchIndex%len(octave)], bgrThresholds)
 		pitchIndex++
 	}
 }
 
-func (k *Keyboard) initBlackKeys(frame *gocv.Mat) {
+func (k *Keyboard) initBlackKeys(frame *gocv.Mat, bgrThresholds []uint8) {
 	start := -1
 	finish := -1
 	for x := 0; x < frame.Cols()-1; x++ {
@@ -121,7 +124,7 @@ func (k *Keyboard) initBlackKeys(frame *gocv.Mat) {
 			if finish-start > 4 { //TODO: Make configurable
 				for _, whiteKey := range k.whiteKeys {
 					if start > whiteKey.start && start < whiteKey.finish {
-						k.blackKeys = append(k.blackKeys, newKey(start, finish, 0, whiteKey.pitch+"#"))
+						k.blackKeys = append(k.blackKeys, newKey(start, finish, whiteKey.pitch+"#", bgrThresholds))
 						break
 					}
 				}

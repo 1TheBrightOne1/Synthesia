@@ -8,25 +8,35 @@
         <form action="/generate/">
             <div>
                 <span>key count:</span>
-                <input id="keyCount" type="number" name="keyCount"/>
+                <input id="keyCount" type="number" name="keyCount" value="52"/>
             </div>
             <div>
                 <span>starting key:</span>
-                <input id="startingKey" type="text" name="startingKey"/>
+                <input id="startingKey" type="text" name="startingKey" value="A"/>
             </div>
             <div>
-                <span>test row:</span>
-                <input id="testRow" type="number" name="testRow"/>
+                <span>test area start:</span>
+                <input id="testRow" type="number" name="testRow" value="150"/>
             </div>
             <div>
-                <span>test row:</span>
-                <input id="keyboardRow" type="number" name="keyboardRow"/>
+                <span>test area end:</span>
+                <input id="testRowEnd" type="number" name="testRowEnd" value="100"/>
+            </div>
+            <div>
+                <span>keyboard row:</span>
+                <input id="keyboardRow" type="number" name="keyboardRow" value="200"/>
             </div>
             <div>
                 <span>keys:</span>
                 <textarea id="keys"></textarea>
                 <input type="text" id="keyBorders" name="keyBorders" style="display: none;"/>
                 <input type="text" id="video" name="video" style="display: none;" value="%s"/>
+            </div>
+            <div>
+                <span>rgb thresholds:</span>
+                <input type="number" id="rthreshold" name="rthreshold" value="70"/>
+                <input type="number" id="gthreshold" name="gthreshold" value="70"/>
+                <input type="number" id="bthreshold" name="bthreshold" value="-70"/>
             </div>
             <input type="submit" value="submit"/>
         </form>

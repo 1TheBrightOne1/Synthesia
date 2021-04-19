@@ -1,3 +1,27 @@
 For first frame, are there any notes that are starting?
 If so, take all of those notes of the same duration and place them into a chord
 Take any other durations and create a backup element, followed by chords again for those
+
+
+_ 100
+
+
+
+
+_ 150 Read 50 pixels, can advance 50 / pixels per frame
+
+------------------------------------------
+_ 100
+
+
+
+_ 148 Read 48 pixels, can advance (48 + 2) / pixels per frame = 48
+_ 150
+
+-----------------------------------------
+_ 100
+
+
+_ 146
+
+_ 150

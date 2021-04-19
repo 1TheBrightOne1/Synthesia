@@ -95,6 +95,14 @@ func generate(w http.ResponseWriter, r *http.Request) {
 
 	keyboardRowStr, ok := r.URL.Query()["keyboardRow"]
 	testRowStr, ok := r.URL.Query()["testRow"]
+	testRowEndStr, ok := r.URL.Query()["testRowEnd"]
+
+	bThresholdStr, ok :=r.URL.Query()["bthreshold"]
+	bThreshold, _ := strconv.ParseInt(bThresholdStr[0], 10, 32)
+	gThresholdStr, ok :=r.URL.Query()["gthreshold"]
+	gThreshold, _ := strconv.ParseInt(gThresholdStr[0], 10, 32)
+	rThresholdStr, ok :=r.URL.Query()["rthreshold"]
+	rThreshold, _ := strconv.ParseInt(rThresholdStr[0], 10, 32)
 
 	keyBordersStr, ok := r.URL.Query()["keyBorders"]
 	if !ok {
@@ -129,14 +137,20 @@ func generate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	keyboardRow, _ := strconv.ParseInt(keyboardRowStr[0], 10, 32)
-	testRow, _ := strconv.ParseInt(testRowStr[0], 10, 32)
-	k := keyboard.NewKeyboard(&img, startingKey[0], keyListInt, int(keyboardRow), int(testRow))
+	testRowStart, _ := strconv.ParseInt(testRowStr[0], 10, 32) //TODO: change these to area boundaries to be more clear
+	testRowEnd, _ := strconv.ParseInt(testRowEndStr[0], 10, 32)
+	testAreaLength := int(testRowStart - testRowEnd)
+	
+	k := keyboard.NewKeyboard(&img, startingKey[0], keyListInt, []uint8{uint8(bThreshold), uint8(gThreshold), uint8(rThreshold)}, int(keyboardRow), int(testRowStart), int(testRowEnd))
 
 	fmt.Println("Calibrating")
-	offset := calibrate(v, k, int(testRow))
-	w.Write([]byte(strconv.Itoa(offset)))
+	offset := calibrate(v, k, int(testRowStart))
+	testRow := int(testRowEnd) + int(testAreaLength / offset) * offset
+	//length = 150 - 100 (50)
+	//150 - (50 / 3)floor
 
 	v.Close()
+
 	v, err = gocv.VideoCaptureFile("./sessions/" + video[0] + "/video.mp4")
 	defer v.Close()
 
@@ -144,8 +158,11 @@ func generate(w http.ResponseWriter, r *http.Request) {
 	for v.Read(&img) {
 		count++
 		fmt.Println(count)
-		k.CheckFrame(&img)
+		k.CheckFrame(&img, testRow)
+
+		v.Grab(int(testAreaLength / offset))
 	}
 
+	fmt.Println("Writing frames")
 	k.WriteFrames(w, false)
 }

@@ -20,6 +20,16 @@ var PitchIndices = map[int]string{
 	6: "G",
 }
 
+var NoteTypes = []NoteType{
+	"whole",
+	"half",
+	"quarter",
+	"eighth",
+	"16th",
+	"32nd",
+	"64th",
+}
+
 type Builder struct {
 	framesPerQuarter int
 	divisions        int
@@ -28,6 +38,7 @@ type Builder struct {
 	beatType         int
 
 	keyNotes []keyNotes
+	durationToNoteType map[int]NoteType
 }
 
 type keyNotes struct {
@@ -36,12 +47,22 @@ type keyNotes struct {
 }
 
 func NewBuilder(framesPerQuarter, divisions, beats, beatType int) *Builder {
+	durationToNoteType := make(map[int]NoteType)
+
+	//TODO: validate division is a power of 2 and we don't overflow
+	index := 0
+	for i := divisions * 4 /*whole note*/; i >= 1; i /= 2 {
+		durationToNoteType[i] = NoteTypes[index]
+		index++
+	}
+
 	return &Builder{
 		framesPerQuarter: framesPerQuarter,
 		divisions:        divisions,
 		measures:         make([]Measure, 1),
 		beats:            beats,
 		beatType:         beatType,
+		durationToNoteType: durationToNoteType,
 	}
 }
 
@@ -240,12 +261,7 @@ func (b *Builder) writeMeasureToXML(w io.Writer, i int) error {
 
 //processNote goes through all frames and writes them to the measures
 func (b *Builder) processNote(index int, note string, keyNote *keyNotes, c chan bool) {
-	if index < 25 || index > 32 {
-		c <- true
-		return
-	}
-
-	k := LoadFromFile("out1.txt", index, note)
+	k := LoadFromFile("out3.txt", index, note)
 
 	octave := int((index + 5) / 7) //TODO: dynamically pick the octave offset
 
@@ -273,7 +289,7 @@ func (b *Builder) processNote(index int, note string, keyNote *keyNotes, c chan 
 							Octave: octave,
 						},
 						Duration:         duration,
-						NoteType:         durationToNoteType[duration],
+						NoteType:         b.durationToNoteType[duration],
 						Staff:            staff,
 						StartsAtDivision: snappedI / framesPerDivision,
 					}
@@ -299,6 +315,21 @@ func NewAttributes(divisions, beats, beatType, key int, mode string) *Attributes
 		Time: &Time{
 			Beats:    beats,
 			BeatType: beatType,
+		},
+		Staves: 2,
+		Clefs: []interface{}{
+			Clef{
+				XMLName: xml.Name{Local: "clef"},
+				Number: 1,
+				Sign: "G",
+				Line: 2,
+		},
+			Clef{
+				XMLName: xml.Name{Local: "clef"},
+				Number: 2,
+				Sign: "F",
+				Line: 4,
+			},
 		},
 	}
 }

@@ -15,14 +15,6 @@ const (
 	thirtysecond NoteType = "32nd"
 )
 
-var durationToNoteType = map[int]NoteType{
-	16: whole,
-	8:  half,
-	4:  quarter,
-	2:  eighth,
-	1:  sixteenth,
-}
-
 type Pitch struct {
 	Step   string `xml:"step"`
 	Octave int    `xml:"octave"`
@@ -98,9 +90,9 @@ func NewForward(duration int) Forward {
 
 type Measure struct {
 	XMLName xml.Name
-	Number     string     `xml:"number,attr"`
-	Notes      []interface {}     //TODO: May have to delete notes elements
 	Attributes *Attributes `xml:"attributes,omitempty"`
+	Number     string     `xml:"number,attr"`
+	Notes      []interface {}
 	Counter int `xml:"-"`
 }
 
@@ -113,8 +105,17 @@ type Time struct {
 	BeatType int `xml:"beat-type"`
 }
 
+type Clef struct {
+	XMLName xml.Name
+	Number int `xml:"number,attr"`
+	Sign string `xml:"sign"`
+	Line int `xml:"line"`
+}
+
 type Attributes struct {
 	Divisions int  `xml:"divisions,omitempty"`
 	Key       *Key  `xml:"key,omitempty"`
 	Time      *Time `xml:"time,omitempty"`
+	Staves int `xml:"staves,omitempty"`
+	Clefs []interface{}
 }
