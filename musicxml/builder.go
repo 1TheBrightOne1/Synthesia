@@ -8,6 +8,8 @@ import (
 	"math"
 	"os"
 	"strconv"
+
+	"github.com/1TheBrightOne1/Synthesia/keyboard"
 )
 
 var PitchIndices = map[int]string{
@@ -66,19 +68,27 @@ func NewBuilder(framesPerQuarter, divisions, beats, beatType int) *Builder {
 	}
 }
 
-func (b *Builder) BuildXML(w io.Writer) {
+func (b *Builder) BuildXML(w io.Writer, k *keyboard.Keyboard) {
 	r, _ := os.Open("header.xml")
 	header, _ := ioutil.ReadAll(r)
 	w.Write(header)
 	r.Close()
 
-	b.keyNotes = make([]keyNotes, 52)
+	b.keyNotes = make([]keyNotes, len(k.WhiteKeys) + len(k.BlackKeys))
 
-	c := make([]chan bool, 52)
+	c := make([]chan bool, len(k.WhiteKeys) + len(k.BlackKeys))
 
-	for i, _ := range c {
+	for i, whiteKey := range k.WhiteKeys {
 		c[i] = make(chan bool)
-		go b.processNote(i, PitchIndices[i%len(PitchIndices)], &b.keyNotes[i], c[i])
+		octave := int((i + 5) / 7) //TODO: dynamically pick the octave offset
+		go b.processNote(whiteKey, whiteKey.Pitch, octave, &b.keyNotes[i], c[i])
+	}
+
+	for j, blackKey := range k.BlackKeys {
+		i := j + len(k.WhiteKeys)
+		c[i] = make(chan bool)
+		octave := int((blackKey.LeftWhiteKeyIndex + 5) / 7)
+		go b.processNote(blackKey, blackKey.Pitch, octave, &b.keyNotes[i], c[i])
 	}
 
 	for _, channel := range c {
@@ -260,21 +270,17 @@ func (b *Builder) writeMeasureToXML(w io.Writer, i int) error {
 }
 
 //processNote goes through all frames and writes them to the measures
-func (b *Builder) processNote(index int, note string, keyNote *keyNotes, c chan bool) {
-	k := LoadFromFile("claire.txt", index, note)
-
-	octave := int((index + 5) / 7) //TODO: dynamically pick the octave offset
-
+func (b *Builder) processNote(k *keyboard.Key, note string, octave int, keyNote *keyNotes, c chan bool) {
 	staff := 1
 	if octave < 4 {
 		staff = 2
 	}
 
 	framesPerDivision := b.framesPerQuarter / b.divisions
-	for i, frame := range k.frames {
-		if frame && (i == 0 || !k.frames[i-1]) {
-			for j := i + 1; i < len(k.frames); j++ {
-				if !k.frames[j] {
+	for i, frame := range k.Pixels {
+		if frame && (i == 0 || !k.Pixels[i-1]) {
+			for j := i + 1; i < len(k.Pixels); j++ {
+				if !k.Pixels[j] {
 					snappedI := int(math.Round(float64(i)/float64(framesPerDivision))) * framesPerDivision
 					snappedJ := int(math.Round(float64(j)/float64(framesPerDivision))) * framesPerDivision
 					duration := (snappedJ - snappedI) / framesPerDivision
@@ -282,12 +288,23 @@ func (b *Builder) processNote(index int, note string, keyNote *keyNotes, c chan 
 						duration = 1
 					}
 
-					n := Note{
-						XMLName: xml.Name{Local: "note"},
-						Pitch: &Pitch{
+					var pitch *Pitch
+					if len(note) > 1 {
+						pitch = &Pitch{
+							Step: string(note[0]),
+							Alter: 1,
+							Octave: octave,
+						}
+					} else {
+						pitch = &Pitch{
 							Step:   note,
 							Octave: octave,
-						},
+						}
+					}
+
+					n := Note{
+						XMLName: xml.Name{Local: "note"},
+						Pitch: pitch,
 						Duration:         duration,
 						NoteType:         b.durationToNoteType[duration],
 						Staff:            staff,

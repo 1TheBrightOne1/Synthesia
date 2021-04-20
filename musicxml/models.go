@@ -17,6 +17,7 @@ const (
 
 type Pitch struct {
 	Step   string `xml:"step"`
+	Alter int `xml:"alter,omitempty"`
 	Octave int    `xml:"octave"`
 }
 

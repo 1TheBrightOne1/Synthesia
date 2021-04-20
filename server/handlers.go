@@ -12,6 +12,7 @@ import (
 
 	"github.com/1TheBrightOne1/Synthesia/keyboard"
 	"github.com/1TheBrightOne1/Synthesia/video"
+	"github.com/1TheBrightOne1/Synthesia/musicxml"
 	"gocv.io/x/gocv"
 )
 
@@ -171,6 +172,15 @@ func generate(w http.ResponseWriter, r *http.Request) {
 		v.Grab(int(testAreaLength / offset))
 	}
 
-	fmt.Println("Writing frames")
-	k.WriteFrames(w, false)
+	f1, _ := os.Open("/outputs/sessions/" + video[0] + "/whiteKeys.txt")
+	defer f1.Close()
+	k.WriteFrames(f1, 1)
+
+	f2, _ := os.Open("/outputs/sessions/" + video[0] + "/blackKeys.txt")
+	defer f2.Close()
+	k.WriteFrames(f2, -1)
+
+	b := musicxml.NewBuilder(48, 8, 4, 4)
+
+	b.BuildXML(w, k)
 }

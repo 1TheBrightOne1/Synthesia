@@ -18,8 +18,8 @@ var octave = map[int]string{
 }
 
 type Keyboard struct {
-	whiteKeys []*key
-	blackKeys []*key
+	WhiteKeys []*Key
+	BlackKeys []*Key
 
 	testRow        int //TODO: remove, no longer used
 	testRowEnd	   int
@@ -40,24 +40,26 @@ func NewKeyboard(frame *gocv.Mat, startingKey string, whiteKeyBorders, bgrThresh
 	return k
 }
 
-func (k *Keyboard) WriteFrames(w io.Writer, includeBlackKeys bool) {
-	fmt.Println(len(k.whiteKeys[25].pixels))
-	for i := 0; i < len(k.whiteKeys[0].pixels); i++ {
-		for j := 0; j < len(k.whiteKeys); j++ {
-			if k.whiteKeys[j].pixels[i] {
-				fmt.Fprint(w, "1 ")
-			} else {
-				fmt.Fprint(w, "0 ")
+func (k *Keyboard) WriteFrames(w io.Writer, mode int) {
+	if mode >= 0 {
+		for i := 0; i < len(k.WhiteKeys[0].Pixels); i++ {
+			for j := 0; j < len(k.WhiteKeys); j++ {
+				if k.WhiteKeys[j].Pixels[i] {
+					fmt.Fprint(w, "1 ")
+				} else {
+					fmt.Fprint(w, "0 ")
+				}
 			}
+			fmt.Fprintf(w, "\n")
 		}
-		fmt.Fprintf(w, "\n")
 	}
-
-	if includeBlackKeys {
+	if mode == 0 {
 		fmt.Fprintf(w, "--------------------------------------")
-		for i := 0; i < len(k.blackKeys[0].pixels); i++ {
-			for j := 0; j < len(k.blackKeys); j++ {
-				if k.blackKeys[j].pixels[i] {
+	}
+	if mode <= 0 {
+		for i := 0; i < len(k.BlackKeys[0].Pixels); i++ {
+			for j := 0; j < len(k.BlackKeys); j++ {
+				if k.BlackKeys[j].Pixels[i] {
 					fmt.Fprint(w, "1 ")
 				} else {
 					fmt.Fprint(w, "0 ")
@@ -69,33 +71,33 @@ func (k *Keyboard) WriteFrames(w io.Writer, includeBlackKeys bool) {
 }
 
 func (k *Keyboard) CheckFrame(frame *gocv.Mat, testRow int) {
-	for _, key := range k.whiteKeys {
+	for _, key := range k.WhiteKeys {
 		go key.readFrame(frame, testRow, k.testRowEnd)
 	}
-	for _, key := range k.blackKeys {
+	for _, key := range k.BlackKeys {
 		go key.readFrame(frame, testRow, k.testRowEnd)
 	}
 
-	for _, key := range k.whiteKeys {
+	for _, key := range k.WhiteKeys {
 		<-key.done
 	}
-	for _, key := range k.blackKeys {
+	for _, key := range k.BlackKeys {
 		<-key.done
 	}
 }
 
 func (k *Keyboard) CalibrateFrame(frame *gocv.Mat, row, keyIndex int) (key, offset int) {
 	if keyIndex >= 0 {
-		if k.whiteKeys[keyIndex].checkRow(frame, row) {
+		if k.WhiteKeys[keyIndex].checkRow(frame, row) {
 			for j := row - 1; j >= row-40; /*TODO: 40 could be too far out of bounds. Also DRY*/ j-- {
-				if !k.whiteKeys[keyIndex].checkRow(frame, j) {
+				if !k.WhiteKeys[keyIndex].checkRow(frame, j) {
 					return keyIndex, j
 				}
 			}
 		}
 		return -1, -1
 	}
-	for i, key := range k.whiteKeys {
+	for i, key := range k.WhiteKeys {
 		if key.checkRow(frame, row) {
 			for j := row - 1; j >= row-40; /*TODO: 40 could be too far out of bounds*/ j-- {
 				if !key.checkRow(frame, j) {
@@ -108,7 +110,7 @@ func (k *Keyboard) CalibrateFrame(frame *gocv.Mat, row, keyIndex int) (key, offs
 }
 
 func (k *Keyboard) initWhiteKeys(borders, bgrThresholds []int) {
-	k.whiteKeys = make([]*key, len(borders)-1)
+	k.WhiteKeys = make([]*Key, len(borders)-1)
 
 	pitch := k.startingKey
 	pitchIndex := 0
@@ -118,8 +120,8 @@ func (k *Keyboard) initWhiteKeys(borders, bgrThresholds []int) {
 			break
 		}
 	}
-	for i := range k.whiteKeys {
-		k.whiteKeys[i] = newKey(borders[i], borders[i+1], octave[pitchIndex%len(octave)], bgrThresholds)
+	for i := range k.WhiteKeys {
+		k.WhiteKeys[i] = newKey(borders[i], borders[i+1], octave[pitchIndex%len(octave)], bgrThresholds, -1)
 		pitchIndex++
 	}
 }
@@ -136,9 +138,9 @@ func (k *Keyboard) initBlackKeys(frame *gocv.Mat, bgrThresholds []int) {
 			finish = x
 
 			if finish-start > 4 { //TODO: Make configurable
-				for _, whiteKey := range k.whiteKeys {
+				for i, whiteKey := range k.WhiteKeys {
 					if start > whiteKey.start && start < whiteKey.finish {
-						k.blackKeys = append(k.blackKeys, newKey(start, finish, whiteKey.pitch+"#", bgrThresholds))
+						k.BlackKeys = append(k.BlackKeys, newKey(start, finish, whiteKey.Pitch+"#", bgrThresholds, i))
 						break
 					}
 				}
@@ -149,7 +151,7 @@ func (k *Keyboard) initBlackKeys(frame *gocv.Mat, bgrThresholds []int) {
 		}
 	}
 
-	for _, key := range k.blackKeys {
+	for _, key := range k.BlackKeys {
 		fmt.Printf("%d - %d\n", key.start, key.finish)
 	}
 }
