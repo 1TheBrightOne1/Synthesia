@@ -2,6 +2,7 @@ package keyboard
 
 import (
 	"gocv.io/x/gocv"
+	"fmt"
 )
 
 type key struct {
@@ -11,10 +12,10 @@ type key struct {
 	pitch  string
 	done chan bool
 
-	bgrThresholds []uint8
+	bgrThresholds []int
 }
 
-func newKey(start, finish int, pitch string, bgrThresholds []uint8) *key {
+func newKey(start, finish int, pitch string, bgrThresholds []int) *key {
 	return &key{
 		start:  start,
 		finish: finish,
@@ -42,7 +43,26 @@ func (k *key) checkRow(img *gocv.Mat, row int) bool {
 	for i := k.start; i < k.finish; i++ {
 		pixel := img.GetVecbAt(row, i)
 
-		if pixel[2] > 60 && pixel[1] > 60 {
+		p := true
+		for j, threshold := range k.bgrThresholds {
+			if threshold < 0 {
+				modified := threshold * -1
+				fmt.Printf("%d < %d\n", pixel[j], uint8(modified))
+				if !(pixel[j] < uint8(modified)) {
+					
+					p = false
+					break
+				}
+			} else {
+				fmt.Printf("%d > %d\n", pixel[j], uint8(threshold))
+				if !(pixel[j] > uint8(threshold)) {
+				fmt.Printf("%d > %d\n", pixel[j], uint8(threshold))
+				p = false
+				break
+				}
+			}
+		}
+		if p {
 			passed++
 		}
 	}
