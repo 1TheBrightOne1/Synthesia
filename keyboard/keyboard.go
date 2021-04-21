@@ -22,7 +22,7 @@ type Keyboard struct {
 	BlackKeys []*Key
 
 	testRow        int //TODO: remove, no longer used
-	testRowEnd	   int
+	testRowEnd     int
 	keyboardHeight int //The pixel row height used to identify the location of the black keys
 
 	startingKey string
@@ -140,7 +140,7 @@ func (k *Keyboard) initBlackKeys(frame *gocv.Mat, bgrThresholds []int) {
 			if finish-start > 4 { //TODO: Make configurable
 				for i, whiteKey := range k.WhiteKeys {
 					if start > whiteKey.start && start < whiteKey.finish {
-						k.BlackKeys = append(k.BlackKeys, newKey(start, finish, whiteKey.Pitch+"#", bgrThresholds, i))
+						k.BlackKeys = append(k.BlackKeys, newKey(start, finish+1, whiteKey.Pitch+"#", bgrThresholds, i))
 						break
 					}
 				}

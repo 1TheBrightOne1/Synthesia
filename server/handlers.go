@@ -11,8 +11,8 @@ import (
 	"strings"
 
 	"github.com/1TheBrightOne1/Synthesia/keyboard"
-	"github.com/1TheBrightOne1/Synthesia/video"
 	"github.com/1TheBrightOne1/Synthesia/musicxml"
+	"github.com/1TheBrightOne1/Synthesia/video"
 	"gocv.io/x/gocv"
 )
 
@@ -106,11 +106,11 @@ func generate(w http.ResponseWriter, r *http.Request) {
 	testRowStr, ok := r.URL.Query()["testRow"]
 	testRowEndStr, ok := r.URL.Query()["testRowEnd"]
 
-	bThresholdStr, ok :=r.URL.Query()["bthreshold"]
+	bThresholdStr, ok := r.URL.Query()["bthreshold"]
 	bThreshold, _ := strconv.ParseInt(bThresholdStr[0], 10, 32)
-	gThresholdStr, ok :=r.URL.Query()["gthreshold"]
+	gThresholdStr, ok := r.URL.Query()["gthreshold"]
 	gThreshold, _ := strconv.ParseInt(gThresholdStr[0], 10, 32)
-	rThresholdStr, ok :=r.URL.Query()["rthreshold"]
+	rThresholdStr, ok := r.URL.Query()["rthreshold"]
 	rThreshold, _ := strconv.ParseInt(rThresholdStr[0], 10, 32)
 
 	keyBordersStr, ok := r.URL.Query()["keyBorders"]
@@ -149,12 +149,12 @@ func generate(w http.ResponseWriter, r *http.Request) {
 	testRowStart, _ := strconv.ParseInt(testRowStr[0], 10, 32) //TODO: change these to area boundaries to be more clear
 	testRowEnd, _ := strconv.ParseInt(testRowEndStr[0], 10, 32)
 	testAreaLength := int(testRowStart - testRowEnd)
-	
+
 	k := keyboard.NewKeyboard(&img, startingKey[0], keyListInt, []int{int(bThreshold), int(gThreshold), int(rThreshold)}, int(keyboardRow), int(testRowStart), int(testRowEnd))
 
 	fmt.Println("Calibrating")
 	offset := calibrate(v, k, int(testRowStart))
-	testRow := int(testRowEnd) + int(testAreaLength / offset) * offset
+	testRow := int(testRowEnd) + int(testAreaLength/offset)*offset
 	//length = 150 - 100 (50)
 	//150 - (50 / 3)floor
 
@@ -172,11 +172,19 @@ func generate(w http.ResponseWriter, r *http.Request) {
 		v.Grab(int(testAreaLength / offset))
 	}
 
-	f1, _ := os.Open("/outputs/sessions/" + video[0] + "/whiteKeys.txt")
+	fmt.Printf("Saving to %s\n", "/outputs/sessions/"+video[0]+"/whiteKeys.txt")
+	f1, err := os.Create("/outputs/sessions/" + video[0] + "/whiteKeys.txt")
+	if err != nil {
+		fmt.Println(err.Error())
+	}
 	defer f1.Close()
 	k.WriteFrames(f1, 1)
 
-	f2, _ := os.Open("/outputs/sessions/" + video[0] + "/blackKeys.txt")
+	fmt.Printf("/outputs/sessions/" + video[0] + "/blackKeys.txt")
+	f2, err := os.Create("/outputs/sessions/" + video[0] + "/blackKeys.txt")
+	if err != nil {
+		fmt.Println(err.Error())
+	}
 	defer f2.Close()
 	k.WriteFrames(f2, -1)
 
