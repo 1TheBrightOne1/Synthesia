@@ -9,7 +9,7 @@ import (
 type key struct {
 	start  int
 	finish int
-	frames []bool
+	Pixels []bool
 	pitch  string
 }
 
@@ -31,7 +31,7 @@ func LoadFromFile(file string, index int, pitch string) key {
 
 		arr := strings.Split(val, " ")
 
-		k.frames = append(k.frames, arr[index] == "1")
+		k.Pixels = append(k.Pixels, arr[index] == "1")
 	}
 
 	return k
