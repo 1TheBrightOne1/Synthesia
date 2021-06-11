@@ -4,7 +4,6 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"math"
 	"os"
 	"strconv"
@@ -39,7 +38,7 @@ type Builder struct {
 	beats            int
 	beatType         int
 
-	keyNotes []keyNotes
+	keyNotes           []keyNotes
 	durationToNoteType map[int]NoteType
 }
 
@@ -53,30 +52,30 @@ func NewBuilder(framesPerQuarter, divisions, beats, beatType int) *Builder {
 
 	//TODO: validate division is a power of 2 and we don't overflow
 	index := 0
-	for i := divisions * 4 /*whole note*/; i >= 1; i /= 2 {
+	for i := divisions * 4; /*whole note*/ i >= 1; i /= 2 {
 		durationToNoteType[i] = NoteTypes[index]
 		index++
 	}
 
 	return &Builder{
-		framesPerQuarter: framesPerQuarter,
-		divisions:        divisions,
-		measures:         make([]Measure, 1),
-		beats:            beats,
-		beatType:         beatType,
+		framesPerQuarter:   framesPerQuarter,
+		divisions:          divisions,
+		measures:           make([]Measure, 1),
+		beats:              beats,
+		beatType:           beatType,
 		durationToNoteType: durationToNoteType,
 	}
 }
 
 func (b *Builder) BuildXML(w io.Writer, k *keyboard.Keyboard) {
 	r, _ := os.Open("header.xml")
-	header, _ := ioutil.ReadAll(r)
+	header, _ := io.ReadAll(r)
 	w.Write(header)
 	r.Close()
 
-	b.keyNotes = make([]keyNotes, len(k.WhiteKeys) + len(k.BlackKeys))
+	b.keyNotes = make([]keyNotes, len(k.WhiteKeys)+len(k.BlackKeys))
 
-	c := make([]chan bool, len(k.WhiteKeys) + len(k.BlackKeys))
+	c := make([]chan bool, len(k.WhiteKeys)+len(k.BlackKeys))
 
 	for i, whiteKey := range k.WhiteKeys {
 		c[i] = make(chan bool)
@@ -141,7 +140,7 @@ func (b *Builder) BuildXML(w io.Writer, k *keyboard.Keyboard) {
 	}
 
 	r, _ = os.Open("footer.xml")
-	footer, _ := ioutil.ReadAll(r)
+	footer, _ := io.ReadAll(r)
 	w.Write(footer)
 	r.Close()
 }
@@ -291,8 +290,8 @@ func (b *Builder) processNote(k *keyboard.Key, note string, octave int, keyNote 
 					var pitch *Pitch
 					if len(note) > 1 {
 						pitch = &Pitch{
-							Step: string(note[0]),
-							Alter: 1,
+							Step:   string(note[0]),
+							Alter:  1,
 							Octave: octave,
 						}
 					} else {
@@ -303,8 +302,8 @@ func (b *Builder) processNote(k *keyboard.Key, note string, octave int, keyNote 
 					}
 
 					n := Note{
-						XMLName: xml.Name{Local: "note"},
-						Pitch: pitch,
+						XMLName:          xml.Name{Local: "note"},
+						Pitch:            pitch,
 						Duration:         duration,
 						NoteType:         b.durationToNoteType[duration],
 						Staff:            staff,
@@ -337,15 +336,15 @@ func NewAttributes(divisions, beats, beatType, key int, mode string) *Attributes
 		Clefs: []interface{}{
 			Clef{
 				XMLName: xml.Name{Local: "clef"},
-				Number: 1,
-				Sign: "G",
-				Line: 2,
-		},
+				Number:  1,
+				Sign:    "G",
+				Line:    2,
+			},
 			Clef{
 				XMLName: xml.Name{Local: "clef"},
-				Number: 2,
-				Sign: "F",
-				Line: 4,
+				Number:  2,
+				Sign:    "F",
+				Line:    4,
 			},
 		},
 	}

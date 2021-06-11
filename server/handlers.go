@@ -3,7 +3,7 @@ package server
 import (
 	"crypto/rand"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -26,7 +26,7 @@ func index(w http.ResponseWriter, r *http.Request) {
 
 	defer f.Close()
 
-	body, err := ioutil.ReadAll(f)
+	body, err := io.ReadAll(f)
 
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -79,14 +79,17 @@ func setup(w http.ResponseWriter, r *http.Request) {
 
 	defer f.Close()
 
-	b, err := ioutil.ReadAll(f)
+	b, err := io.ReadAll(f)
 
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	fmt.Fprintf(w, string(b), fmt.Sprintf("/sessions/%s/frame.png", video[0]), 640, 360, video[0]) //TODO: get width and height
+	img := gocv.IMRead(fmt.Sprintf("/sessions/%s/frame.png", video[0]), gocv.IMReadColor)
+	height, width := img.Rows(), img.Cols()
+
+	fmt.Fprintf(w, string(b), fmt.Sprintf("/sessions/%s/frame.png", video[0]), width, height, video[0])
 }
 
 func generate(w http.ResponseWriter, r *http.Request) {

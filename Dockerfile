@@ -1,4 +1,4 @@
-FROM thebrightone/gocv
+FROM thebrightone/gocv:go1.16
 
 WORKDIR /go/src/app
 
