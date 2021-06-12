@@ -1,11 +1,12 @@
 package server
 
 import (
-	"crypto/rand"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -13,6 +14,7 @@ import (
 	"github.com/1TheBrightOne1/Synthesia/keyboard"
 	"github.com/1TheBrightOne1/Synthesia/musicxml"
 	"github.com/1TheBrightOne1/Synthesia/video"
+	log "github.com/sirupsen/logrus"
 	"gocv.io/x/gocv"
 )
 
@@ -42,16 +44,29 @@ func download(w http.ResponseWriter, r *http.Request) {
 
 	if !ok {
 		w.WriteHeader(http.StatusBadRequest)
+		return
 	}
 
-	b := make([]byte, 16)
-	_, err := rand.Read(b)
+	vidURL, err := url.Parse(youtubeLink[0])
 	if err != nil {
-		log.Fatal(err)
+		log.Error(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
-	dir := fmt.Sprintf("%x-%x-%x-%x-%x", b[0:4], b[4:6], b[6:8], b[8:10], b[10:])
+	dir := vidURL.Query().Get("v")
 
-	os.Mkdir("/outputs/sessions/"+dir, 0666)
+	if _, err = os.Stat("/outputs/sessions/" + dir); !errors.Is(err, os.ErrNotExist) {
+		log.Info("using existing video")
+		http.Redirect(w, r, fmt.Sprintf("/setup/?video=%s", dir), http.StatusTemporaryRedirect)
+		return
+	}
+
+	err = os.Mkdir("/outputs/sessions/"+dir, 0666)
+	if err != nil {
+		log.Error(err)
+		w.Write([]byte(err.Error()))
+		return
+	}
 
 	err = video.DownloadYoutube(youtubeLink[0], "/outputs/sessions/"+string(dir)+"/video.mp4")
 	if err != nil {
@@ -70,7 +85,7 @@ func download(w http.ResponseWriter, r *http.Request) {
 
 func setup(w http.ResponseWriter, r *http.Request) {
 	f, err := os.Open("./server/templates/setup.html")
-	video := r.URL.Query()["video"]
+	vid := r.URL.Query()["video"]
 
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -86,10 +101,18 @@ func setup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	img := gocv.IMRead(fmt.Sprintf("/sessions/%s/frame.png", video[0]), gocv.IMReadColor)
-	height, width := img.Rows(), img.Cols()
+	metaFile, err := os.Open(fmt.Sprintf("/outputs/sessions/%s/metadata.txt", vid[0]))
+	if err != nil {
+		log.Error(err)
+	}
+	mb, err := io.ReadAll(metaFile)
+	if err != nil {
+		log.Error(err)
+	}
+	meta := video.Metadata{}
+	err = json.Unmarshal(mb, &meta)
 
-	fmt.Fprintf(w, string(b), fmt.Sprintf("/sessions/%s/frame.png", video[0]), width, height, video[0])
+	fmt.Fprintf(w, string(b), fmt.Sprintf("/sessions/%s/frame.png", vid[0]), meta.Width, meta.Height, vid[0])
 }
 
 func generate(w http.ResponseWriter, r *http.Request) {

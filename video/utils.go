@@ -1,15 +1,23 @@
 package video
 
 import (
+	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 
 	log "github.com/sirupsen/logrus"
 
 	youtube "github.com/kkdai/youtube/v2"
 	"gocv.io/x/gocv"
 )
+
+type Metadata struct {
+	Height int
+	Width  int
+}
 
 func DownloadYoutube(url, saveTo string) error {
 	client := youtube.Client{}
@@ -72,6 +80,27 @@ func GenerateThumbnail(videoFilePath string, skipFrames int, frameFilePath strin
 	if !ok {
 		return errors.New("unable to save frame")
 	}
+
+	meta := Metadata{
+		Height: img.Rows(),
+		Width:  img.Cols(),
+	}
+
+	b, err := json.Marshal(meta)
+	if err != nil {
+		log.Error(err)
+		return err
+	}
+
+	dir := filepath.Dir(videoFilePath)
+	log.Info(fmt.Sprintf("saving metadata to %s: %v", dir, meta))
+	f, err := os.Create(dir + "/metadata.txt")
+	if err != nil {
+		log.Error(err)
+		return err
+	}
+	defer f.Close()
+	f.Write(b)
 
 	return nil
 }
