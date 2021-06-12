@@ -1,4 +1,4 @@
-FROM thebrightone/gocv
+FROM thebrightone/gocv:go1.16
 
 WORKDIR /go/src/app
 
@@ -8,7 +8,7 @@ ENV skipframes=240
 
 ENV row=50
 
-RUN go get -u gocv.io/x/gocv@v0.26.0
+#RUN go get -u gocv.io/x/gocv@v0.26.0
 
 RUN mkdir /outputs && mkdir /outputs/sessions
 

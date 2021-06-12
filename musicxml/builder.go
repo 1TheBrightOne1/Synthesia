@@ -4,7 +4,6 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"math"
 	"os"
 	"strconv"
@@ -37,7 +36,7 @@ type Builder struct {
 	beats            int
 	beatType         int
 
-	keyNotes []keyNotes
+	keyNotes           []keyNotes
 	durationToNoteType map[int]NoteType
 }
 
@@ -51,24 +50,24 @@ func NewBuilder(framesPerQuarter, divisions, beats, beatType int) *Builder {
 
 	//TODO: validate division is a power of 2 and we don't overflow
 	index := 0
-	for i := divisions * 4 /*whole note*/; i >= 1; i /= 2 {
+	for i := divisions * 4; /*whole note*/ i >= 1; i /= 2 {
 		durationToNoteType[i] = NoteTypes[index]
 		index++
 	}
 
 	return &Builder{
-		framesPerQuarter: framesPerQuarter,
-		divisions:        divisions,
-		measures:         make([]Measure, 1),
-		beats:            beats,
-		beatType:         beatType,
+		framesPerQuarter:   framesPerQuarter,
+		divisions:          divisions,
+		measures:           make([]Measure, 1),
+		beats:              beats,
+		beatType:           beatType,
 		durationToNoteType: durationToNoteType,
 	}
 }
 
 func (b *Builder) BuildXML(w io.Writer) {
 	r, _ := os.Open("header.xml")
-	header, _ := ioutil.ReadAll(r)
+	header, _ := io.ReadAll(r)
 	w.Write(header)
 	r.Close()
 
@@ -131,7 +130,7 @@ func (b *Builder) BuildXML(w io.Writer) {
 	}
 
 	r, _ = os.Open("footer.xml")
-	footer, _ := ioutil.ReadAll(r)
+	footer, _ := io.ReadAll(r)
 	w.Write(footer)
 	r.Close()
 }
@@ -320,15 +319,15 @@ func NewAttributes(divisions, beats, beatType, key int, mode string) *Attributes
 		Clefs: []interface{}{
 			Clef{
 				XMLName: xml.Name{Local: "clef"},
-				Number: 1,
-				Sign: "G",
-				Line: 2,
-		},
+				Number:  1,
+				Sign:    "G",
+				Line:    2,
+			},
 			Clef{
 				XMLName: xml.Name{Local: "clef"},
-				Number: 2,
-				Sign: "F",
-				Line: 4,
+				Number:  2,
+				Sign:    "F",
+				Line:    4,
 			},
 		},
 	}
