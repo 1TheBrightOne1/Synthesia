@@ -2,7 +2,6 @@ package keyboard
 
 import (
 	"gocv.io/x/gocv"
-	"fmt"
 )
 
 type key struct {
@@ -10,18 +9,18 @@ type key struct {
 	finish int
 	pixels []bool
 	pitch  string
-	done chan bool
+	done   chan bool
 
 	bgrThresholds []int
 }
 
 func newKey(start, finish int, pitch string, bgrThresholds []int) *key {
 	return &key{
-		start:  start,
-		finish: finish,
-		pitch:  pitch,
-		pixels: make([]bool, 0),
-		done: make(chan bool),
+		start:         start,
+		finish:        finish,
+		pitch:         pitch,
+		pixels:        make([]bool, 0),
+		done:          make(chan bool),
 		bgrThresholds: bgrThresholds,
 	}
 }
@@ -47,18 +46,15 @@ func (k *key) checkRow(img *gocv.Mat, row int) bool {
 		for j, threshold := range k.bgrThresholds {
 			if threshold < 0 {
 				modified := threshold * -1
-				fmt.Printf("%d < %d\n", pixel[j], uint8(modified))
 				if !(pixel[j] < uint8(modified)) {
-					
+
 					p = false
 					break
 				}
 			} else {
-				fmt.Printf("%d > %d\n", pixel[j], uint8(threshold))
 				if !(pixel[j] > uint8(threshold)) {
-				fmt.Printf("%d > %d\n", pixel[j], uint8(threshold))
-				p = false
-				break
+					p = false
+					break
 				}
 			}
 		}

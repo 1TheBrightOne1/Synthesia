@@ -260,7 +260,7 @@ func (b *Builder) writeMeasureToXML(w io.Writer, i int) error {
 
 //processNote goes through all frames and writes them to the measures
 func (b *Builder) processNote(index int, note string, keyNote *keyNotes, c chan bool) {
-	k := LoadFromFile("claire.txt", index, note)
+	k := LoadFromFile("whitekeys.txt", index, note)
 
 	octave := int((index + 5) / 7) //TODO: dynamically pick the octave offset
 

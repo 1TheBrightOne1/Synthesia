@@ -1,17 +1,20 @@
 package server
 
 import (
-	"crypto/rand"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
 
 	"github.com/1TheBrightOne1/Synthesia/keyboard"
+	"github.com/1TheBrightOne1/Synthesia/musicxml"
 	"github.com/1TheBrightOne1/Synthesia/video"
+	log "github.com/sirupsen/logrus"
 	"gocv.io/x/gocv"
 )
 
@@ -41,16 +44,29 @@ func download(w http.ResponseWriter, r *http.Request) {
 
 	if !ok {
 		w.WriteHeader(http.StatusBadRequest)
+		return
 	}
 
-	b := make([]byte, 16)
-	_, err := rand.Read(b)
+	vidURL, err := url.Parse(youtubeLink[0])
 	if err != nil {
-		log.Fatal(err)
+		log.Error(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
-	dir := fmt.Sprintf("%x-%x-%x-%x-%x", b[0:4], b[4:6], b[6:8], b[8:10], b[10:])
+	dir := vidURL.Query().Get("v")
 
-	os.Mkdir("/outputs/sessions/"+dir, 0666)
+	if _, err = os.Stat("/outputs/sessions/" + dir); !errors.Is(err, os.ErrNotExist) {
+		log.Info("using existing video")
+		http.Redirect(w, r, fmt.Sprintf("/setup/?video=%s", dir), http.StatusTemporaryRedirect)
+		return
+	}
+
+	err = os.Mkdir("/outputs/sessions/"+dir, 0666)
+	if err != nil {
+		log.Error(err)
+		w.Write([]byte(err.Error()))
+		return
+	}
 
 	err = video.DownloadYoutube(youtubeLink[0], "/outputs/sessions/"+string(dir)+"/video.mp4")
 	if err != nil {
@@ -69,7 +85,7 @@ func download(w http.ResponseWriter, r *http.Request) {
 
 func setup(w http.ResponseWriter, r *http.Request) {
 	f, err := os.Open("./server/templates/setup.html")
-	video := r.URL.Query()["video"]
+	vid := r.URL.Query()["video"]
 
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -85,7 +101,18 @@ func setup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Fprintf(w, string(b), fmt.Sprintf("/sessions/%s/frame.png", video[0]), 640, 360, video[0]) //TODO: get width and height
+	metaFile, err := os.Open(fmt.Sprintf("/outputs/sessions/%s/metadata.txt", vid[0]))
+	if err != nil {
+		log.Error(err)
+	}
+	mb, err := io.ReadAll(metaFile)
+	if err != nil {
+		log.Error(err)
+	}
+	meta := video.Metadata{}
+	err = json.Unmarshal(mb, &meta)
+
+	fmt.Fprintf(w, string(b), fmt.Sprintf("/sessions/%s/frame.png", vid[0]), meta.Width, meta.Height, vid[0])
 }
 
 func generate(w http.ResponseWriter, r *http.Request) {
@@ -171,6 +198,23 @@ func generate(w http.ResponseWriter, r *http.Request) {
 		v.Grab(int(testAreaLength / offset))
 	}
 
-	fmt.Println("Writing frames")
-	k.WriteFrames(w, false)
+	fmt.Printf("Saving to %s\n", "/outputs/sessions/"+video[0]+"/whiteKeys.txt")
+	f1, err := os.Create("/outputs/sessions/" + video[0] + "/whiteKeys.txt")
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	defer f1.Close()
+	k.WriteFrames(f1, false)
+
+	fmt.Printf("/outputs/sessions/" + video[0] + "/blackKeys.txt")
+	f2, err := os.Create("/outputs/sessions/" + video[0] + "/blackKeys.txt")
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	defer f2.Close()
+	k.WriteFrames(f2, false)
+
+	b := musicxml.NewBuilder(48, 8, 4, 4)
+
+	b.BuildXML(w)
 }

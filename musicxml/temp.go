@@ -2,6 +2,7 @@ package musicxml
 
 import (
 	"bufio"
+	"log"
 	"os"
 	"strings"
 )
@@ -14,7 +15,10 @@ type key struct {
 }
 
 func LoadFromFile(file string, index int, pitch string) key {
-	f, _ := os.Open(file)
+	f, err := os.Open(file)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	k := key{
 		pitch: pitch,
